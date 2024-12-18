@@ -31,7 +31,9 @@ const cspConfig = {
       "https://api.calorieninjas.com",
       "https://www.googleapis.com",
       "https://accounts.google.com",
-      "ws://fitx-1-qqim.onrender.com/"
+      "https://fitx-6cyg.onrender.com",
+      "ws://fitx-1-qqim.onrender.com/",
+      "https://fitx-1-qqim.onrender.com"
     ],
     frameSrc: [
       "'self'",
@@ -42,8 +44,10 @@ const cspConfig = {
     childSrc: ["'self'", "blob:"],
     workerSrc: ["'self'", "blob:"],
     manifestSrc: ["'self'"],
-    formAction: ["'self'"],
-    baseUri: ["'self'"]
+    formAction: ["'self'", "https://accounts.google.com"],
+    baseUri: ["'self'"],
+    // Required for WebAuthn
+    webauthnSrc: ["'self'"]
   }
 };
 

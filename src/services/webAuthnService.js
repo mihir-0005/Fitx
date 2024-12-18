@@ -1,4 +1,5 @@
 import { startRegistration, startAuthentication } from '@simplewebauthn/browser';
+import { base64URLToBuffer } from '../utils/base64Utils';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -18,9 +19,34 @@ const handleApiResponse = async (response) => {
   return response.json();
 };
 
+const prepareRegistrationOptions = (options) => {
+  return {
+    ...options,
+    challenge: base64URLToBuffer(options.challenge),
+    user: options.user ? {
+      ...options.user,
+      id: base64URLToBuffer(options.user.id)
+    } : undefined,
+    excludeCredentials: options.excludeCredentials?.map(credential => ({
+      ...credential,
+      id: base64URLToBuffer(credential.id)
+    }))
+  };
+};
+
+const prepareAuthenticationOptions = (options) => {
+  return {
+    ...options,
+    challenge: base64URLToBuffer(options.challenge),
+    allowCredentials: options.allowCredentials?.map(credential => ({
+      ...credential,
+      id: base64URLToBuffer(credential.id)
+    }))
+  };
+};
+
 export const registerBiometric = async (googleId) => {
   try {
-    // Get registration options
     const optionsResponse = await fetch(`${API_URL}/auth/register/${googleId}/challenge`, {
       method: 'POST',
       credentials: 'include',
@@ -31,23 +57,9 @@ export const registerBiometric = async (googleId) => {
     });
 
     const options = await handleApiResponse(optionsResponse);
+    const preparedOptions = prepareRegistrationOptions(options);
+    const credential = await startRegistration(preparedOptions);
 
-    // Convert base64URL strings to Uint8Arrays
-    options.challenge = Uint8Array.from(atob(options.challenge), c => c.charCodeAt(0));
-    if (options.user) {
-      options.user.id = Uint8Array.from(atob(options.user.id), c => c.charCodeAt(0));
-    }
-    if (options.excludeCredentials) {
-      options.excludeCredentials = options.excludeCredentials.map(credential => ({
-        ...credential,
-        id: Uint8Array.from(atob(credential.id), c => c.charCodeAt(0))
-      }));
-    }
-
-    // Start registration
-    const credential = await startRegistration(options);
-
-    // Verify registration
     const verificationResponse = await fetch(`${API_URL}/auth/register/${googleId}/verify`, {
       method: 'POST',
       credentials: 'include',
@@ -61,9 +73,6 @@ export const registerBiometric = async (googleId) => {
     return await handleApiResponse(verificationResponse);
   } catch (error) {
     console.error('Biometric registration error:', error);
-    if (error instanceof WebAuthnError) {
-      throw error;
-    }
     throw new WebAuthnError(
       error.message || 'Failed to register biometric authentication',
       'REGISTRATION_ERROR'
@@ -73,7 +82,6 @@ export const registerBiometric = async (googleId) => {
 
 export const authenticateBiometric = async (googleId) => {
   try {
-    // Get authentication options
     const optionsResponse = await fetch(`${API_URL}/auth/authenticate/${googleId}/challenge`, {
       method: 'POST',
       credentials: 'include',
@@ -84,20 +92,9 @@ export const authenticateBiometric = async (googleId) => {
     });
 
     const options = await handleApiResponse(optionsResponse);
+    const preparedOptions = prepareAuthenticationOptions(options);
+    const credential = await startAuthentication(preparedOptions);
 
-    // Convert base64URL strings to Uint8Arrays
-    options.challenge = Uint8Array.from(atob(options.challenge), c => c.charCodeAt(0));
-    if (options.allowCredentials) {
-      options.allowCredentials = options.allowCredentials.map(credential => ({
-        ...credential,
-        id: Uint8Array.from(atob(credential.id), c => c.charCodeAt(0))
-      }));
-    }
-
-    // Start authentication
-    const credential = await startAuthentication(options);
-
-    // Verify authentication
     const verificationResponse = await fetch(`${API_URL}/auth/authenticate/${googleId}/verify`, {
       method: 'POST',
       credentials: 'include',
@@ -111,9 +108,6 @@ export const authenticateBiometric = async (googleId) => {
     return await handleApiResponse(verificationResponse);
   } catch (error) {
     console.error('Biometric authentication error:', error);
-    if (error instanceof WebAuthnError) {
-      throw error;
-    }
     throw new WebAuthnError(
       error.message || 'Failed to authenticate using biometrics',
       'AUTHENTICATION_ERROR'

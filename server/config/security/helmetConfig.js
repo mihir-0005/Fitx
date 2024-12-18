@@ -3,7 +3,7 @@ const helmetConfig = {
   crossOriginResourcePolicy: { policy: "cross-origin" },
   contentSecurityPolicy: false, // Using custom CSP middleware
   dnsPrefetchControl: { allow: false },
-  frameguard: { action: 'deny' },
+  frameguard: false, // Required for WebAuthn
   hidePoweredBy: true,
   hsts: {
     maxAge: 31536000,
