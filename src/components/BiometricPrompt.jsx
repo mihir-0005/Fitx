@@ -106,7 +106,7 @@ export default function BiometricPrompt({ onSuccess, onCancel }) {
 
       const userData = JSON.parse(localStorage.getItem('userData'));
 
-      const optionsRes = await fetch(`http://localhost:3000/api/auth/authenticate/${userData.googleId}/challenge`, {
+      const optionsRes = await fetch(`https://fitx-6cyg.onrender.com/api/auth/authenticate/${userData.googleId}/challenge`, {
         method: 'POST',
         credentials: 'include',
       });
@@ -114,7 +114,7 @@ export default function BiometricPrompt({ onSuccess, onCancel }) {
 
       const credential = await startAuthentication(options);
 
-      const verificationRes = await fetch(`http://localhost:3000/api/auth/authenticate/${userData.googleId}/verify`, {
+      const verificationRes = await fetch(`https://fitx-6cyg.onrender.com/api/auth/authenticate/${userData.googleId}/verify`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

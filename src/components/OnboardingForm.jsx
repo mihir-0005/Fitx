@@ -20,7 +20,7 @@ export default function OnboardingForm() {
     };
 
     try {
-      await axios.post('http://localhost:3000/api/users/onboarding', userData);
+      await axios.post('https://fitx-6cyg.onrender.com/api/users/onboarding', userData);
       navigate('/home');
     } catch (error) {
       console.error('Error saving user data:', error);

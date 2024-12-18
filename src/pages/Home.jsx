@@ -84,7 +84,7 @@ export default function Home() {
     const fetchUserProfile = async () => {
       try {
         const userData = JSON.parse(localStorage.getItem('userData'));
-        const response = await axios.get(`http://localhost:3000/api/users/${userData.googleId}`);
+        const response = await axios.get(`https://fitx-6cyg.onrender.com/api/users/${userData.googleId}`);
         setUserProfile(response.data.data);
       } catch (error) {
         console.error('Error fetching user profile:', error);

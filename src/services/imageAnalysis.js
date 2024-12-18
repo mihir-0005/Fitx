@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { validateImageFile, fileToBase64 } from '../utils/imageUtils';
 
-const API_URL = 'http://localhost:3000/api';
+const API_URL = 'https://fitx-6cyg.onrender.com/api';
 
 export const analyzeImage = async (imageFile) => {
   try {

@@ -14,7 +14,7 @@ export default function BiometricSetup({ onSetupComplete }) {
       const userData = JSON.parse(localStorage.getItem('userData'));
       
       // Get registration options from server
-      const optionsRes = await fetch(`http://localhost:3000/api/auth/register/${userData.googleId}/challenge`, {
+      const optionsRes = await fetch(`https://fitx-6cyg.onrender.com/api/auth/register/${userData.googleId}/challenge`, {
         method: 'POST',
         credentials: 'include'
       });
@@ -24,7 +24,7 @@ export default function BiometricSetup({ onSetupComplete }) {
       const credential = await startRegistration(options);
 
       // Verify registration with server
-      const verificationRes = await fetch(`http://localhost:3000/api/auth/register/${userData.googleId}/verify`, {
+      const verificationRes = await fetch(`https://fitx-6cyg.onrender.com/api/auth/register/${userData.googleId}/verify`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

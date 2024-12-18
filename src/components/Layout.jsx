@@ -49,7 +49,7 @@ const Layout = () => {
       try {
         setIsAuthenticated(true);
         const { googleId } = JSON.parse(userData);
-        const response = await axios.get(`http://localhost:3000/api/users/${googleId}`);
+        const response = await axios.get(`https://fitx-6cyg.onrender.com/api/users/${googleId}`);
         const user = response.data.data;
         
         const needsOnboarding = !user.age || !user.weight || !user.height || !user.goals;

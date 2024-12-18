@@ -1,7 +1,7 @@
 const isDevelopment = process.env.NODE_ENV !== 'production';
 
 const corsConfig = {
-  origin: isDevelopment ? 'http://localhost:5173' : process.env.CLIENT_URL,
+  origin: isDevelopment ? 'https://fitx-1-qqim.onrender.com' : process.env.CLIENT_URL,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
