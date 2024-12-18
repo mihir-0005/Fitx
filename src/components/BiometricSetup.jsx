@@ -14,17 +14,25 @@ export default function BiometricSetup({ onSetupComplete }) {
       const userData = JSON.parse(localStorage.getItem('userData'));
       
       // Get registration options from server
-      const optionsRes = await fetch(`https://fitx-6cyg.onrender.com/api/auth/register/${userData.googleId}/challenge`, {
+      const optionsRes = await fetch(`${import.meta.env.VITE_API_URL}/auth/register/${userData.googleId}/challenge`, {
         method: 'POST',
-        credentials: 'include'
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
+
+      if (!optionsRes.ok) {
+        throw new Error('Failed to get registration options');
+      }
+
       const options = await optionsRes.json();
 
       // Start registration process
       const credential = await startRegistration(options);
 
       // Verify registration with server
-      const verificationRes = await fetch(`https://fitx-6cyg.onrender.com/api/auth/register/${userData.googleId}/verify`, {
+      const verificationRes = await fetch(`${import.meta.env.VITE_API_URL}/auth/register/${userData.googleId}/verify`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -32,6 +40,10 @@ export default function BiometricSetup({ onSetupComplete }) {
         body: JSON.stringify({ credential }),
         credentials: 'include'
       });
+
+      if (!verificationRes.ok) {
+        throw new Error('Failed to verify registration');
+      }
 
       const verification = await verificationRes.json();
 

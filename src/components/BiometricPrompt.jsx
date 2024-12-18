@@ -15,15 +15,15 @@ const OverlayContainer = styled.div`
 
 const PromptCard = styled.div`
   background: rgba(255, 255, 255, 0.95);
-  width: 220px; /* Reduced width */
-  height: 220px; /* Reduced height */
+  width: 220px;
+  height: 220px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   align-items: center;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  padding: 1rem; /* Reduced padding */
+  padding: 1rem;
 `;
 
 const Title = styled.h2`
@@ -106,15 +106,23 @@ export default function BiometricPrompt({ onSuccess, onCancel }) {
 
       const userData = JSON.parse(localStorage.getItem('userData'));
 
-      const optionsRes = await fetch(`https://fitx-6cyg.onrender.com/api/auth/authenticate/${userData.googleId}/challenge`, {
+      const optionsRes = await fetch(`${import.meta.env.VITE_API_URL}/auth/authenticate/${userData.googleId}/challenge`, {
         method: 'POST',
         credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
+
+      if (!optionsRes.ok) {
+        throw new Error('Failed to get authentication options');
+      }
+
       const options = await optionsRes.json();
 
       const credential = await startAuthentication(options);
 
-      const verificationRes = await fetch(`https://fitx-6cyg.onrender.com/api/auth/authenticate/${userData.googleId}/verify`, {
+      const verificationRes = await fetch(`${import.meta.env.VITE_API_URL}/auth/authenticate/${userData.googleId}/verify`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -122,6 +130,10 @@ export default function BiometricPrompt({ onSuccess, onCancel }) {
         body: JSON.stringify({ credential }),
         credentials: 'include',
       });
+
+      if (!verificationRes.ok) {
+        throw new Error('Authentication failed');
+      }
 
       const verification = await verificationRes.json();
 
