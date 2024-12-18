@@ -1,130 +1,150 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Fingerprint, Loader } from 'lucide-react';
-import { authenticateBiometric } from '../services/webAuthnService';
-import { checkBrowserCompatibility, parseWebAuthnError } from '../utils/webAuthnUtils';
+import { startAuthentication } from '@simplewebauthn/browser';
 import styled from 'styled-components';
 
 const OverlayContainer = styled.div`
   position: fixed;
   inset: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background: linear-gradient(135deg, rgba(201, 228, 202, 0.95), rgba(135, 187, 162, 0.95), rgba(85, 130, 139, 0.95));
+  backdrop-filter: blur(8px);
   display: flex;
-  align-items: center;
   justify-content: center;
-  z-index: 50;
+  align-items: center;
 `;
 
 const PromptCard = styled.div`
-  background: white;
-  padding: 2rem;
-  border-radius: 1rem;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-  max-width: 28rem;
-  width: 90%;
+  background: rgba(255, 255, 255, 0.95);
+  width: 220px;
+  height: 220px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  padding: 1rem;
 `;
 
 const Title = styled.h2`
-  font-size: 1.5rem;
-  font-weight: 600;
+  font-size: 1rem;
+  font-weight: bold;
   color: #364958;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
 `;
 
 const Description = styled.p`
-  color: #4b5563;
-  margin-bottom: 1.5rem;
-`;
-
-const ErrorMessage = styled.div`
-  background-color: #fee2e2;
-  border: 1px solid #ef4444;
-  color: #b91c1c;
-  padding: 0.75rem;
-  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  color: #4B5563;
   margin-bottom: 1rem;
 `;
 
 const ButtonContainer = styled.div`
   display: flex;
-  gap: 1rem;
-  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
 `;
 
 const VerifyButton = styled.button`
+  background: #55828B;
+  color: white;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  background-color: #55828B;
-  color: white;
-  border: none;
-  border-radius: 0.5rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s;
+  flex: 1;
+  font-size: 0.875rem;
+  transition: transform 0.2s;
 
-  &:hover {
-    background-color: #3B6064;
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
   }
 
   &:disabled {
-    opacity: 0.5;
+    opacity: 0.7;
     cursor: not-allowed;
   }
 `;
 
 const CancelButton = styled.button`
-  padding: 0.5rem 1rem;
-  background-color: transparent;
-  color: #4b5563;
-  border: none;
+  background: #f3f4f6;
+  color: #4B5563;
+  padding: 0.5rem;
   border-radius: 0.5rem;
-  font-weight: 500;
-  cursor: pointer;
+  font-size: 0.875rem;
   transition: background-color 0.2s;
 
-  &:hover {
-    background-color: #f3f4f6;
+  &:hover:not(:disabled) {
+    background-color: #e0e7ff;
   }
 
   &:disabled {
-    opacity: 0.5;
+    opacity: 0.7;
     cursor: not-allowed;
   }
+`;
+
+const ErrorMessage = styled.div`
+  background-color: #FEE2E2;
+  color: #B91C1C;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
 `;
 
 export default function BiometricPrompt({ onSuccess, onCancel }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [isSupported, setIsSupported] = useState(true);
-
-  useEffect(() => {
-    try {
-      checkBrowserCompatibility();
-    } catch (error) {
-      setIsSupported(false);
-      setError(error.message);
-    }
-  }, []);
 
   const handleAuthenticate = async () => {
-    if (!isSupported) return;
-
     try {
       setLoading(true);
       setError(null);
 
       const userData = JSON.parse(localStorage.getItem('userData'));
-      const result = await authenticateBiometric(userData.googleId);
 
-      if (result.verified) {
+      const optionsRes = await fetch(`${import.meta.env.VITE_API_URL}/auth/authenticate/${userData.googleId}/challenge`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!optionsRes.ok) {
+        throw new Error('Failed to get authentication options');
+      }
+
+      const options = await optionsRes.json();
+
+      const credential = await startAuthentication(options);
+
+      const verificationRes = await fetch(`${import.meta.env.VITE_API_URL}/auth/authenticate/${userData.googleId}/verify`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ credential }),
+        credentials: 'include',
+      });
+
+      if (!verificationRes.ok) {
+        throw new Error('Authentication failed');
+      }
+
+      const verification = await verificationRes.json();
+
+      if (verification.verified) {
         onSuccess();
       } else {
         throw new Error('Authentication failed');
       }
     } catch (err) {
-      console.error('Biometric authentication error:', err);
-      setError(parseWebAuthnError(err));
+      console.error('Error during biometric authentication:', err);
+      setError(err.message || 'Authentication failed');
     } finally {
       setLoading(false);
     }
@@ -141,7 +161,7 @@ export default function BiometricPrompt({ onSuccess, onCancel }) {
         {error && <ErrorMessage>{error}</ErrorMessage>}
 
         <ButtonContainer>
-          <VerifyButton onClick={handleAuthenticate} disabled={loading || !isSupported}>
+          <VerifyButton onClick={handleAuthenticate} disabled={loading}>
             {loading ? <Loader className="w-5 h-5 animate-spin" /> : <Fingerprint className="w-5 h-5" />}
             {loading ? 'Verifying...' : 'Verify'}
           </VerifyButton>

@@ -1,53 +1,64 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Fingerprint, Loader } from 'lucide-react';
-import { registerBiometric } from '../services/webAuthnService';
-import { checkBrowserCompatibility, parseWebAuthnError } from '../utils/webAuthnUtils';
+import { startRegistration } from '@simplewebauthn/browser';
 
 export default function BiometricSetup({ onSetupComplete }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [isSupported, setIsSupported] = useState(true);
-
-  useEffect(() => {
-    try {
-      checkBrowserCompatibility();
-    } catch (error) {
-      setIsSupported(false);
-      setError(error.message);
-    }
-  }, []);
 
   const handleSetup = async () => {
-    if (!isSupported) return;
-
     try {
       setLoading(true);
       setError(null);
       
       const userData = JSON.parse(localStorage.getItem('userData'));
-      const result = await registerBiometric(userData.googleId);
       
-      if (result.verified) {
+      // Get registration options from server
+      const optionsRes = await fetch(`${import.meta.env.VITE_API_URL}/auth/register/${userData.googleId}/challenge`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!optionsRes.ok) {
+        throw new Error('Failed to get registration options');
+      }
+
+      const options = await optionsRes.json();
+
+      // Start registration process
+      const credential = await startRegistration(options);
+
+      // Verify registration with server
+      const verificationRes = await fetch(`${import.meta.env.VITE_API_URL}/auth/register/${userData.googleId}/verify`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ credential }),
+        credentials: 'include'
+      });
+
+      if (!verificationRes.ok) {
+        throw new Error('Failed to verify registration');
+      }
+
+      const verification = await verificationRes.json();
+
+      if (verification.verified) {
         onSetupComplete();
       } else {
         throw new Error('Verification failed');
       }
     } catch (err) {
-      console.error('Biometric setup error:', err);
-      setError(parseWebAuthnError(err));
+      console.error('Error setting up biometric authentication:', err);
+      setError(err.message || 'Failed to set up biometric authentication');
     } finally {
       setLoading(false);
     }
   };
-
-  if (!isSupported) {
-    return (
-      <div className="p-6 bg-white rounded-lg shadow-lg">
-        <h2 className="text-xl font-bold text-red-600 mb-4">Not Supported</h2>
-        <p className="text-gray-600">{error}</p>
-      </div>
-    );
-  }
 
   return (
     <div className="p-6 bg-white rounded-lg shadow-lg">
