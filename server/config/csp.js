@@ -31,7 +31,7 @@ const cspConfig = {
       "https://api.calorieninjas.com",
       "https://www.googleapis.com",
       "https://accounts.google.com",
-      "ws://localhost:5173"
+      "ws://fitx-1-qqim.onrender.com/"
     ],
     frameSrc: [
       "'self'",
