@@ -6,7 +6,7 @@ const isDevelopment = process.env.NODE_ENV !== 'production';
 
 export const webAuthnConfig = {
   rpName: 'FitTrack',
-  rpID: isDevelopment ? 'localhost' : process.env.DOMAIN,
+  rpID: isDevelopment ? 'fitx-1-qqim.onrender' : process.env.DOMAIN,
   origin: isDevelopment ? 'https://fitx-1-qqim.onrender.com' : `https://${process.env.DOMAIN}`,
   expectedOrigin: isDevelopment ? 'https://fitx-1-qqim.onrender.com' : `https://${process.env.DOMAIN}`,
 };
