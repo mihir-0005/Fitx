@@ -25,31 +25,40 @@ export const registerBiometric = async (googleId) => {
       method: 'POST',
       credentials: 'include',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
       }
     });
 
     const options = await handleApiResponse(optionsResponse);
-    console.log('Registration options received:', { ...options, challenge: '...' });
+
+    // Convert base64URL strings to Uint8Arrays
+    options.challenge = Uint8Array.from(atob(options.challenge), c => c.charCodeAt(0));
+    if (options.user) {
+      options.user.id = Uint8Array.from(atob(options.user.id), c => c.charCodeAt(0));
+    }
+    if (options.excludeCredentials) {
+      options.excludeCredentials = options.excludeCredentials.map(credential => ({
+        ...credential,
+        id: Uint8Array.from(atob(credential.id), c => c.charCodeAt(0))
+      }));
+    }
 
     // Start registration
     const credential = await startRegistration(options);
-    console.log('Credential created successfully');
 
     // Verify registration
     const verificationResponse = await fetch(`${API_URL}/auth/register/${googleId}/verify`, {
       method: 'POST',
       credentials: 'include',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
       },
-      body: JSON.stringify({ credential })
+      body: JSON.stringify(credential)
     });
 
-    const verification = await handleApiResponse(verificationResponse);
-    console.log('Registration verification result:', verification);
-
-    return verification;
+    return await handleApiResponse(verificationResponse);
   } catch (error) {
     console.error('Biometric registration error:', error);
     if (error instanceof WebAuthnError) {
@@ -69,31 +78,37 @@ export const authenticateBiometric = async (googleId) => {
       method: 'POST',
       credentials: 'include',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
       }
     });
 
     const options = await handleApiResponse(optionsResponse);
-    console.log('Authentication options received:', { ...options, challenge: '...' });
+
+    // Convert base64URL strings to Uint8Arrays
+    options.challenge = Uint8Array.from(atob(options.challenge), c => c.charCodeAt(0));
+    if (options.allowCredentials) {
+      options.allowCredentials = options.allowCredentials.map(credential => ({
+        ...credential,
+        id: Uint8Array.from(atob(credential.id), c => c.charCodeAt(0))
+      }));
+    }
 
     // Start authentication
     const credential = await startAuthentication(options);
-    console.log('Authentication credential created successfully');
 
     // Verify authentication
     const verificationResponse = await fetch(`${API_URL}/auth/authenticate/${googleId}/verify`, {
       method: 'POST',
       credentials: 'include',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
       },
-      body: JSON.stringify({ credential })
+      body: JSON.stringify(credential)
     });
 
-    const verification = await handleApiResponse(verificationResponse);
-    console.log('Authentication verification result:', verification);
-
-    return verification;
+    return await handleApiResponse(verificationResponse);
   } catch (error) {
     console.error('Biometric authentication error:', error);
     if (error instanceof WebAuthnError) {
